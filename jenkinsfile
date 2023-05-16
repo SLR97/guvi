@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+    
+    environment {
+        dockerImage = 'shree97/new:os'
+    }
+    
+    stages {
+        stage('SCM Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/SLR97/guvi'
+            }
+        }
+    stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t shree97/new:os .'
+            }
+        }
+    stage('Docker Image Push') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerPass', variable: 'dockerPassword')]) {
+                    sh "docker login -u shree97 -p ${dockerPassword}"
+                }
+                sh 'docker push shree97/new:os'
+            }
+        }
+            stage('Remove Previous Container') {
+    steps {
+        script {
+            try {
+                sh 'docker rm -f tomcattest'
+            } catch (error) {
+                // do nothing if there is an exception
+            }
+        }
+    }
+}
+
+    stage('Docker Deployment') {
+            steps {
+                sh 'docker run -d -p 8090:80 --name guvi shree97/new:os' 
+            }
+        }
+    }
+}
